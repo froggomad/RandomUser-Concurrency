@@ -25,6 +25,7 @@ class UserCollectionViewController: UICollectionViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        collectionView.prefetchDataSource = self
         
         userController.fetchUsers { result in
             switch result {
@@ -80,7 +81,8 @@ class UserCollectionViewController: UICollectionViewController {
         return cell
     }
     
-    private func dataOps(for user: RandomUser, at indexPath: IndexPath) -> (PhotoFetchOperation, BlockOperation) {
+    typealias FetchOperations = (PhotoFetchOperation, BlockOperation)
+    private func dataOps(for user: RandomUser, at indexPath: IndexPath) -> FetchOperations {
         var user = randomUsers[indexPath.item]
         let fetchOp = PhotoFetchOperation(type: .large, ref: user)
         let cacheOp = BlockOperation {
@@ -92,12 +94,28 @@ class UserCollectionViewController: UICollectionViewController {
         return (fetchOp, cacheOp)
     }
     
-    
-    
+    override func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        var user = randomUsers[indexPath.item]
+        operations[user.id]?.cancel()
+    }
 }
 
-extension UserCollectionViewController: UICollectionViewDelegateFlowLayout {
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        CGSize(width: 100, height: 128)
+extension UserCollectionViewController: UICollectionViewDataSourcePrefetching {
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        for indexPath in indexPaths {
+            var user = randomUsers[indexPath.item]
+            if largeImageCache.value(for: user.id) == nil {
+                let fetchOps = dataOps(for: user, at: indexPath)
+                operations[user.id] = fetchOps.0
+            }
+        }
     }
+    
+    func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+        for indexPath in indexPaths {
+            var user = randomUsers[indexPath.item]
+            operations[user.id]?.cancel()
+        }
+    }
+    
 }
