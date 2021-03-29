@@ -12,6 +12,7 @@ struct UserResults: Codable {
 }
 
 struct LoginInformation: Codable {
+    let uuid: String
     let username: String
 }
 
@@ -24,8 +25,8 @@ struct RandomUser: Codable {
     lazy var username: String = login.username
     lazy var thumbnail: URL  = picture.thumbnail
     lazy var large: URL = picture.large
+    lazy var id: String = login.uuid
     // Codable properties
     let login: LoginInformation
     let picture: PictureInformation
-    
 }

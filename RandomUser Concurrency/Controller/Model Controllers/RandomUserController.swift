@@ -12,10 +12,12 @@ class RandomUserController {
     private let networkService = NetworkService()
     private let baseURL: URL = URL(string: "https://randomuser.me/api/")!
     
-    func fetchUsers(_ number: Int = 5000, completion: @escaping (Result<[RandomUser]?, Error>) -> Void) {
-        let queryItem = URLQueryItem(name: "results", value: String(number))
+    func fetchUsers(results: Int = 500, page: Int = 1, seed: String = "abc", completion: @escaping (Result<[RandomUser]?, Error>) -> Void) {
+        let pageQueryItem = URLQueryItem(name: "page", value: String(page))
+        let resultQueryItem = URLQueryItem(name: "results", value: String(results))
+        let seedQueryItem = URLQueryItem(name: "seed", value: seed)
         guard var components = URLComponents(string: baseURL.absoluteString) else { return }
-        components.queryItems = [queryItem]
+        components.queryItems = [pageQueryItem, resultQueryItem, seedQueryItem]
         
         guard let request = networkService.createRequest(url: components.url, method: .get) else { return }
         networkService.loadData(using: request) { [unowned self] data, _, error in
@@ -25,7 +27,8 @@ class RandomUserController {
                 }
                 return
             }
-            
+            let url = request.url
+            print(url)
             guard let data = data,
                   let users = self.networkService.decode(to: UserResults.self, data: data)
             else {
