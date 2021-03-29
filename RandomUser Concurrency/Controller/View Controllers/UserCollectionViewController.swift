@@ -69,10 +69,6 @@ class UserCollectionViewController: UICollectionViewController {
                 }
             }
             imageSetOp.addDependency(fetchOps.0)
-            largeImageOpQueue.addOperations ([
-                fetchOps.0,
-                fetchOps.1
-            ], waitUntilFinished: false)
             
             OperationQueue.main.addOperation(imageSetOp)
             operations[user.id] = fetchOps.0
@@ -91,6 +87,10 @@ class UserCollectionViewController: UICollectionViewController {
             }
         }
         cacheOp.addDependency(fetchOp)
+        largeImageOpQueue.addOperations ([
+            fetchOp,
+            cacheOp
+        ], waitUntilFinished: false)
         return (fetchOp, cacheOp)
     }
     
@@ -107,6 +107,7 @@ extension UserCollectionViewController: UICollectionViewDataSourcePrefetching {
             if largeImageCache.value(for: user.id) == nil {
                 let fetchOps = dataOps(for: user, at: indexPath)
                 operations[user.id] = fetchOps.0
+                
             }
         }
     }
