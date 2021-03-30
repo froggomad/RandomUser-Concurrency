@@ -22,7 +22,7 @@ class PhotoCell: UICollectionViewCell {
     }
     
     private func updateViews() {
-        guard var user = user else {
+        guard let user = user else {
             titleLabel.text = defaultTitle
             imageView.image = defaultImage
             return

@@ -6,26 +6,26 @@
 //
 
 import Foundation
-
+/// TDO for RandomUser
 struct UserResults: Codable {
     let results: [RandomUser]
 }
-
+/// TDO for RandomUser
 struct LoginInformation: Codable {
     let uuid: String
     let username: String
 }
-
+/// TDO for RandomUser
 struct PictureInformation: Codable {
     let large: URL
     let thumbnail: URL
 }
 
 struct RandomUser: Codable {
-    lazy var username: String = login.username
-    lazy var thumbnail: URL  = picture.thumbnail
-    lazy var large: URL = picture.large
-    lazy var id: String = login.uuid
+    var username: String { login.username }
+    var thumbnail: URL { picture.thumbnail }
+    var large: URL { picture.large }
+    var id: String { login.uuid }
     // Codable properties
     let login: LoginInformation
     let picture: PictureInformation

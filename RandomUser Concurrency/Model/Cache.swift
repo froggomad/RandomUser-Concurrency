@@ -7,6 +7,8 @@
 
 import Foundation
 
+/// Generic Cache
+// could be improved with a maximum size and FIFO logic to prevent bloated memory conditions
 class Cache<Key: Hashable, Value> {
     private var stores = [Key: Value]()
     private let queue = DispatchQueue(label: "CacheQueue")

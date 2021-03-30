@@ -12,6 +12,7 @@ class RandomUserController {
     private let networkService = NetworkService()
     private let baseURL: URL = URL(string: "https://randomuser.me/api/")!
     
+    /// fetch `results` users using `page` to paginate and `seed` to ensure the same results are being paginated
     func fetchUsers(results: Int = 500, page: Int = 1, seed: String = "abc", completion: @escaping (Result<[RandomUser]?, Error>) -> Void) {
         let pageQueryItem = URLQueryItem(name: "page", value: String(page))
         let resultQueryItem = URLQueryItem(name: "results", value: String(results))
@@ -27,8 +28,6 @@ class RandomUserController {
                 }
                 return
             }
-            let url = request.url
-            print(url)
             guard let data = data,
                   let users = self.networkService.decode(to: UserResults.self, data: data)
             else {

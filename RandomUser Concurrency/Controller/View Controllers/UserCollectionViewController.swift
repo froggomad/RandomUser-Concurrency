@@ -9,10 +9,13 @@ import UIKit
 
 class UserCollectionViewController: UICollectionViewController {
     // MARK: - Properties -
+    /// The Operations Queue for large user images
     private let largeImageOpQueue = OperationQueue()
+    /// Operations hashmap used to schedule requests
     private var operations = [String: Operation]()
-    
+    /// Cache holding image data for images that have already been retrieved
     private let largeImageCache = Cache<String, Data>()
+    
     private var randomUsers: [RandomUser] = [] {
         didSet {
             if !randomUsers.isEmpty {
@@ -22,25 +25,24 @@ class UserCollectionViewController: UICollectionViewController {
     }
     
     private let userController = RandomUserController()
-    
+    // MARK: - View Lifecycle -
     override func viewDidLoad() {
         super.viewDidLoad()
         collectionView.prefetchDataSource = self
-        
+        // populate cells with usernames
         userController.fetchUsers { result in
             switch result {
             case .success(let users):
-                self.randomUsers = users?.sorted(by: { user1, user2  in
-                                                    var user1 = user1
-                                                    var user2 = user2
-                                                    return user1.username < user2.username }) ?? []
+                self.randomUsers.append(
+                    contentsOf: users?.sorted(by: { $0.username < $1.username }) ?? []
+                )
         
             case .failure(let error):
                 print(error)
             }
         }
     }
-    
+    // MARK: - CollectionView DataSource -
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         randomUsers.count
     }
@@ -50,16 +52,17 @@ class UserCollectionViewController: UICollectionViewController {
         return cell
     }
     
+    /// sets ops to fetch data, cache, and display
     private func loadThumbnail(for indexPath: IndexPath) -> UICollectionViewCell {
         let cell =  collectionView.dequeueReusableCell(withReuseIdentifier: PhotoCell.reuseIdentifier, for: indexPath) as! PhotoCell
-        var user = randomUsers[indexPath.item]
-        //assign user to cell
+        let user = randomUsers[indexPath.item]
         cell.user = user
-        // load thumbnail
+        // load thumbnail from cache
         if let imageData = largeImageCache.value(for: user.id),
            let image = UIImage(data: imageData) {
             cell.imageView.image = image
         } else {
+            // fetch image from url
             let fetchOps = dataOps(for: user, at: indexPath)
             let imageSetOp = BlockOperation {
                 DispatchQueue.main.async {
@@ -78,8 +81,12 @@ class UserCollectionViewController: UICollectionViewController {
     }
     
     typealias FetchOperations = (PhotoFetchOperation, BlockOperation)
+    
+    /// Create fetch and cache operations for the user's large image and add them to the OperationQueue
+    /// - Parameters:
+    /// - Returns: FetchOperations (.0 is PhotoFetchOperation, .1 is BlockOperation aka cacheOp)
     private func dataOps(for user: RandomUser, at indexPath: IndexPath) -> FetchOperations {
-        var user = randomUsers[indexPath.item]
+        let user = randomUsers[indexPath.item]
         let fetchOp = PhotoFetchOperation(type: .large, ref: user)
         let cacheOp = BlockOperation {
             if let data = fetchOp.imageData {
@@ -95,15 +102,15 @@ class UserCollectionViewController: UICollectionViewController {
     }
     
     override func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        var user = randomUsers[indexPath.item]
+        let user = randomUsers[indexPath.item]
         operations[user.id]?.cancel()
     }
 }
-
+// MARK: - Prefetch -
 extension UserCollectionViewController: UICollectionViewDataSourcePrefetching {
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
         for indexPath in indexPaths {
-            var user = randomUsers[indexPath.item]
+            let user = randomUsers[indexPath.item]
             if largeImageCache.value(for: user.id) == nil {
                 let fetchOps = dataOps(for: user, at: indexPath)
                 operations[user.id] = fetchOps.0
@@ -114,7 +121,7 @@ extension UserCollectionViewController: UICollectionViewDataSourcePrefetching {
     
     func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
         for indexPath in indexPaths {
-            var user = randomUsers[indexPath.item]
+            let user = randomUsers[indexPath.item]
             operations[user.id]?.cancel()
         }
     }
